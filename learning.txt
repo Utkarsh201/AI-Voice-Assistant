@@ -1,0 +1,140 @@
+https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition
+
+we are using an inbuild library in js that is used to convert the human voice to text 
+
+
+
+
+JavaScript
+
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { SessionsClient } from '@google-cloud/dialogflow'; // Dialogflow client
+import { v4 as uuid } from 'uuid'; // To create unique session IDs
+
+// --- 1. AUTHENTICATION & PATH SETUP ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Set the path to your service account key file
+const keyFilePath = path.join(__dirname, 'config', 'config.json');
+process.env.GOOGLE_APPLICATION_CREDENTIALS = keyFilePath;
+
+// Get your Project ID from the config.json file
+// (You must manually add this to your config.json or just paste it here)
+import config from './config/config.json' assert { type: 'json' };
+const projectId = config.project_id; // Get project ID from the JSON key file
+
+// --- 2. DIALOGFLOW CLIENT SETUP ---
+const sessionClient = new SessionsClient();
+
+/**
+ * Sends a text query to the Dialogflow agent.
+ * @param {string} text The text query to send.
+ * @param {string} sessionId A unique identifier for the conversation.
+ */
+async function detectIntent(text, sessionId) {
+  // The path to identify the conversation session
+  const sessionPath = sessionClient.projectAgentSessionPath(
+    projectId,
+    sessionId
+  );
+
+  // The text query request
+  const request = {
+    session: sessionPath,
+    queryInput: {
+      text: {
+        text: text,
+        languageCode: 'en-US', // Use the language code of your agent
+      },
+    },
+  };
+
+  console.log(`Sending text: "${text}" to Dialogflow session: ${sessionId}`);
+
+  // Send the request and get the response
+  try {
+    const responses = await sessionClient.detectIntent(request);
+    console.log('Dialogflow response:', responses[0].queryResult.fulfillmentText);
+    
+    // Return the agent's fulfillment text
+    return responses[0].queryResult.fulfillmentText;
+  } catch (error) {
+    console.error('ERROR in detectIntent:', error);
+    return 'Sorry, I ran into an error.';
+  }
+}
+
+// --- 3. EXPRESS SERVER SETUP ---
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware to parse JSON bodies (for POST requests)
+app.use(express.json());
+
+// Serve static files from the 'frontend' folder
+app.use(express.static(path.join(__dirname, 'frontend')));
+
+// --- 4. API ROUTES ---
+
+// This is the new endpoint your frontend will call
+app.post('/send-to-dialogflow', async (req, res) => {
+  const { message, sessionId } = req.body;
+
+  // If no sessionId is provided, create a new one
+  // In a real app, you'd want to store this on the client
+  const sId = sessionId || uuid(); 
+
+  const responseText = await detectIntent(message, sId);
+  
+  res.json({
+    reply: responseText,
+    sessionId: sId,
+  });
+});
+
+// Catch-all route to serve your index.html
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+How to Call This From Your Frontend
+Now, in your frontend JavaScript (e.g., frontend/script.js), you can use fetch to call your new API endpoint:
+
+JavaScript
+
+// A variable to store the session ID for the whole conversation
+let currentSessionId = null;
+
+async function sendMessageToBot(messageText) {
+  const response = await fetch('/send-to-dialogflow', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: messageText,
+      sessionId: currentSessionId, // Send the current session ID
+    }),
+  });
+
+  const data = await response.json();
+
+  // Save the session ID so the bot remembers the context
+  currentSessionId = data.sessionId;
+
+  // data.reply is the text from your bot
+  console.log('Bot says:', data.reply);
+  
+  // Here, you would display data.reply in your chat window
+}
+
+// Example of how to use it
+sendMessageToBot('Hello');

@@ -1,15 +1,24 @@
-const express = require('express');
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 
-app.use(express.static(__dirname + './view'));
-app.use(express.static(__dirname + './public'));
-// read the static files 
-console.log(__dirname + "./view");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-console.log("server is running on the port 3000");
-const server = app.listen(3000);
-app.get('/' ,(req, res)=>{
-    res.sendFile('index.html');
+app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
+
+app.get('./api/message', (req, res)=>{
+    res.join({
+        message : "Hello from the backend"
+    });
 });
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"));
+});
+
+app.listen(3000 , ()=>{
+    console.log("Server is running on the PORT 3000");
+});

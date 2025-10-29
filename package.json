@@ -6,7 +6,8 @@
     "dev": "nodemon index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Utkarsh",
+  "type": "module",
   "license": "ISC",
   "description": "",
   "dependencies": {

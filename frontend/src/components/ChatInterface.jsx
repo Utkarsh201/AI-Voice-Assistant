@@ -1,15 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 
 const ChatInterface = ({ initialMessages = [], botName = "AI Assistant", botStatus = "Online" }) => {
   const [messages, setMessages] = useState(initialMessages);
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
+
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
+
+
+  if (!browserSupportsSpeechRecognition) {
+    return <span>Browser doesn't support speech recognition.</span>;
+  }
+
+
+
   const handleSendMessage = (text) => {
-    // Add user message
     const userMessage = {
       id: Date.now(),
       text,
@@ -34,23 +49,24 @@ const ChatInterface = ({ initialMessages = [], botName = "AI Assistant", botStat
     }, 2000);
   };
 
+
   const handleVoiceToggle = () => {
     if (!isListening) {
-      // Start listening (UI only)
+      SpeechRecognition.startListening();
       setIsListening(true);
       console.log('Started listening...');
       
-      // Simulate voice input after 3 seconds (placeholder)
-      setTimeout(() => {
-        console.log('Voice input captured (placeholder)');
-        setIsListening(false);
-      }, 3000);
     } else {
       // Stop listening
+      SpeechRecognition.stopListening()
       setIsListening(false);
       console.log('Stopped listening...');
+      handleSendMessage(transcript);
+      // stop listening 
+
     }
   };
+
 
   const handleSettingsClick = () => {
     console.log('Settings clicked - placeholder for settings modal');
@@ -69,6 +85,8 @@ const ChatInterface = ({ initialMessages = [], botName = "AI Assistant", botStat
         messages={messages}
         isTyping={isTyping}
         showWelcome={messages.length === 0}
+        isListening = {isListening}
+        transcript = {transcript}
       />
       
       <ChatInput 

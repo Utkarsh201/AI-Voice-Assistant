@@ -3,7 +3,7 @@ import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import WelcomeMessage from './WelcomeMessage';
 
-const ChatMessages = ({ messages, isTyping, showWelcome }) => {
+const ChatMessages = ({ messages, isTyping, showWelcome , isListen, transcript}) => {
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {

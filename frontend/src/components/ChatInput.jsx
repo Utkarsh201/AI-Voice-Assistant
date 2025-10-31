@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Mic, MicOff, SendHorizontal } from 'lucide-react';
 import VoiceStatus from './VoiceStatus';
 
+
 const ChatInput = ({ onSendMessage, onVoiceToggle, isListening }) => {
   const [message, setMessage] = useState('');
+
 
   const handleSend = () => {
     if (message.trim()) {
